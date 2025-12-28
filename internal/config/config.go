@@ -22,6 +22,9 @@ func Read(filepaths ...string) (Config, error) {
 	}
 	file, err := os.Open(filePath)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return Config{}, fmt.Errorf("the file is not found on the path: %v", filePath)
+		}
 		return Config{}, fmt.Errorf("error read config file: %w", err)
 	}
 	defer file.Close()
@@ -45,6 +48,20 @@ func (c Config) SetUser(userName string, filepaths ...string) error {
 	return nil
 }
 
+func (c Config) GetUser(filepaths ...string) string {
+	return c.CurrentUserName
+}
+
+func getConfigFilePath(filepaths ...string) (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.Join(home, ".gatorconfig.json"), nil
+}
+
+/*
 // TODO
 func getConfigFilePath(filepaths ...string) (string, error) {
 	// Explicit override always wins
@@ -82,6 +99,7 @@ func getConfigFilePath(filepaths ...string) (string, error) {
 
 	return "", fmt.Errorf("%s not found", configFileName)
 }
+*/
 
 func write(c Config, filePath string) error {
 	file, err := os.Create(filePath)
