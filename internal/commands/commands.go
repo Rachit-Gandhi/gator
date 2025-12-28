@@ -26,7 +26,7 @@ func (c *Commands) Run(s *State, cmd Command) error {
 	}
 	err := v(s, cmd)
 	if err != nil {
-		return fmt.Errorf("error executing error: %w", err)
+		return fmt.Errorf("error executing command: %w", err)
 	}
 	return nil
 }

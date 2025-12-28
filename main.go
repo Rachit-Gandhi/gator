@@ -19,7 +19,10 @@ func main() {
 	commandsMap := commands.Commands{
 		Mux: make(map[string]func(s *commands.State, cmd commands.Command) error),
 	}
-	commandsMap.Register("login", commands.HandlerLogin)
+	err = commandsMap.Register("login", commands.HandlerLogin)
+	if err != nil {
+		log.Fatalf("registeration of command failed: %v", err)
+	}
 	cliArgs := os.Args
 	if len(cliArgs) < 2 {
 		log.Fatal("Minimum of two arguments are expected.")
