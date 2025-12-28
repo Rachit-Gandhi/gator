@@ -45,6 +45,7 @@ func (c Config) SetUser(userName string, filepaths ...string) error {
 	return nil
 }
 
+// TODO
 func getConfigFilePath(filepaths ...string) (string, error) {
 	// Explicit override always wins
 	if len(filepaths) > 0 {
