@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/Rachit-Gandhi/gator/internal/database"
+	"github.com/Rachit-Gandhi/gator/internal/rss"
 	"github.com/google/uuid"
 )
 
@@ -63,6 +64,17 @@ func Reset(s *State, cmd Command) error {
 	return nil
 }
 
+func GetUser(s *State, cmd Command) (database.User, error) {
+	if len(cmd.StringArgs) != 1 {
+		return database.User{}, fmt.Errorf("the user handler needs one argument username of type string")
+	}
+	user, err := s.Db.GetUser(context.Background(), cmd.StringArgs[0])
+	if err != nil {
+		return database.User{}, fmt.Errorf("error getting user with this username: %w", err)
+	}
+	return user, nil
+}
+
 func GetUsers(s *State, cmd Command) error {
 	if len(cmd.StringArgs) != 0 {
 		return fmt.Errorf("the users handler doesn't accept cli argument")
@@ -80,5 +92,41 @@ func GetUsers(s *State, cmd Command) error {
 			fmt.Printf("%v (current)\n", currentUser)
 		}
 	}
+	return nil
+}
+
+func Aggregate(s *State, cmd Command) error {
+	if len(cmd.StringArgs) != 0 {
+		return fmt.Errorf("the users handler doesn't accept cli argument")
+	}
+	r, err := rss.FetchFeed(context.Background(), "https://www.wagslane.dev/index.xml")
+	if err != nil {
+		return fmt.Errorf("the xml fetch failed: %w", err)
+	}
+	fmt.Println(r)
+	return nil
+
+}
+
+func AddFeed(s *State, cmd Command) error {
+	if len(cmd.StringArgs) != 2 {
+		return fmt.Errorf(("add feed handlers expects 2 arguments: name & url"))
+	}
+	id := uuid.New()
+	currUserName := s.Cfg.GetUser()
+	currUser, err := s.Db.GetUser(context.Background(), currUserName)
+	if err != nil {
+		return fmt.Errorf("error getting current user: %w", err)
+	}
+	user_id := currUser.ID
+	name, url := cmd.StringArgs[0], cmd.StringArgs[1]
+	newFeed := database.AddFeedParams{
+		ID:     id,
+		UserID: user_id,
+		Name:   name,
+		Url:    url,
+	}
+	_, err = s.Db.AddFeed(context.Background(), newFeed)
+	fmt.Printf("feed aded: %v\n", newFeed)
 	return nil
 }
