@@ -130,3 +130,21 @@ func AddFeed(s *State, cmd Command) error {
 	fmt.Printf("feed aded: %v\n", newFeed)
 	return nil
 }
+
+func GetFeeds(s *State, cmd Command) error {
+	if len(cmd.StringArgs) != 0 {
+		return fmt.Errorf("get feeds doesn't accept any arguments")
+	}
+	feeds, err := s.Db.GetFeeds(context.Background())
+	if err != nil {
+		return fmt.Errorf("error getting feeds: %w", err)
+	}
+	for _, feed := range feeds {
+		userName, err := s.Db.GetUserById(context.Background(), feed.UserID)
+		if err != nil {
+			return fmt.Errorf("error getting username: %w", err)
+		}
+		fmt.Printf("Name: %v, URL: %v, userName: %v\n", feed.Name, feed.Url, userName.Name)
+	}
+	return nil
+}
