@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Rachit-Gandhi/gator/internal/config"
@@ -41,4 +42,15 @@ func (c *Commands) Register(TriggerName string, f func(*State, Command) error) e
 
 	c.Mux[TriggerName] = f
 	return nil
+}
+
+func MiddlewareLoggedIn(handler func(s *State, cmd Command, user database.User) error) func(*State, Command) error {
+
+	return func(s *State, cmd Command) error {
+		user, err := s.Db.GetUser(context.Background(), s.Cfg.GetUser())
+		if err != nil {
+			return fmt.Errorf("error getting logged in user: %w", err)
+		}
+		return handler(s, cmd, user)
+	}
 }
