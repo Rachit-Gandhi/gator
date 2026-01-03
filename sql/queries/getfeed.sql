@@ -1,3 +1,3 @@
 -- name: GetFeedByUrl :one
 SELECT * FROM feeds
-where url = $1;
+WHERE url = $1;

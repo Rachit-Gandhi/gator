@@ -137,7 +137,7 @@ func AddFeed(s *State, cmd Command, user database.User) error {
 	if err != nil {
 		return fmt.Errorf("error adding feed follow post adding feed: %w", err)
 	}
-	fmt.Printf("feed aded: %v\n", newFeed)
+	fmt.Printf("feed added: %v\n", newFeed)
 	return nil
 }
 
@@ -168,7 +168,7 @@ func CreateFeedFollow(s *State, cmd Command, user database.User) error {
 	if err == sql.ErrNoRows {
 		return fmt.Errorf("no feed entry found to follow: %w", err)
 	} else if err != nil {
-		return fmt.Errorf("error getting user: %w", err)
+		return fmt.Errorf("error getting feed: %w", err)
 	}
 	feed_follow := database.CreateFeedFollowParams{
 		ID:        uuid.New(),
@@ -181,6 +181,7 @@ func CreateFeedFollow(s *State, cmd Command, user database.User) error {
 	if err != nil {
 		return fmt.Errorf("error creating feed follow: %w", err)
 	}
+	fmt.Printf("feed follow created between %v user and %v feed", user.Name, feed.Name)
 	return nil
 }
 
@@ -204,6 +205,9 @@ func GetFeedFollowsForUser(s *State, cmd Command, user database.User) error {
 }
 
 func DeleteFeedFollowsPair(s *State, cmd Command, user database.User) error {
+	if len(cmd.StringArgs[0]) != 1 {
+		return fmt.Errorf("unfollow expects one argument, feedurl")
+	}
 	feed, err := s.Db.GetFeedByUrl(context.Background(), cmd.StringArgs[0])
 	if err != nil {
 		return fmt.Errorf("error getting feed from url: %w", err)

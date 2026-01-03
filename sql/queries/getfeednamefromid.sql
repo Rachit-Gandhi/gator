@@ -1,3 +1,3 @@
 -- name: GetFeedNameById :one
 SELECT name FROM feeds
-where id = $1;
+WHERE id = $1;
