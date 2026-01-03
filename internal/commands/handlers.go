@@ -109,17 +109,12 @@ func Aggregate(s *State, cmd Command) error {
 
 }
 
-func AddFeed(s *State, cmd Command) error {
+func AddFeed(s *State, cmd Command, user database.User) error {
 	if len(cmd.StringArgs) != 2 {
 		return fmt.Errorf(("add feed handlers expects 2 arguments: name & url"))
 	}
 	id := uuid.New()
-	currUserName := s.Cfg.GetUser()
-	currUser, err := s.Db.GetUser(context.Background(), currUserName)
-	if err != nil {
-		return fmt.Errorf("error getting current user: %w", err)
-	}
-	user_id := currUser.ID
+	user_id := user.ID
 	name, url := cmd.StringArgs[0], cmd.StringArgs[1]
 	newFeed := database.AddFeedParams{
 		ID:     id,
@@ -127,9 +122,9 @@ func AddFeed(s *State, cmd Command) error {
 		Name:   name,
 		Url:    url,
 	}
-	_, err = s.Db.AddFeed(context.Background(), newFeed)
+	_, err := s.Db.AddFeed(context.Background(), newFeed)
 	if err != nil {
-		fmt.Errorf("error adding feed: %w", err)
+		return fmt.Errorf("error adding feed: %w", err)
 	}
 	feed_follow := database.CreateFeedFollowParams{
 		ID:        uuid.New(),
@@ -140,7 +135,7 @@ func AddFeed(s *State, cmd Command) error {
 	}
 	_, err = s.Db.CreateFeedFollow(context.Background(), feed_follow)
 	if err != nil {
-		fmt.Errorf("error adding feed follow post adding feed: %w", err)
+		return fmt.Errorf("error adding feed follow post adding feed: %w", err)
 	}
 	fmt.Printf("feed aded: %v\n", newFeed)
 	return nil
@@ -164,12 +159,11 @@ func GetFeeds(s *State, cmd Command) error {
 	return nil
 }
 
-func CreateFeedFollow(s *State, cmd Command) error {
+func CreateFeedFollow(s *State, cmd Command, user database.User) error {
 	if len(cmd.StringArgs) != 1 {
 		return fmt.Errorf("create feed expects one argument, feed_url")
 	}
 	feed_url := cmd.StringArgs[0]
-	user, err := s.Db.GetUser(context.Background(), s.Cfg.GetUser())
 	feed, err := s.Db.GetFeedByUrl(context.Background(), feed_url)
 	if err == sql.ErrNoRows {
 		return fmt.Errorf("no feed entry found to follow: %w", err)
@@ -190,15 +184,14 @@ func CreateFeedFollow(s *State, cmd Command) error {
 	return nil
 }
 
-func GetFeedFollowsForUser(s *State, cmd Command) error {
+func GetFeedFollowsForUser(s *State, cmd Command, user database.User) error {
 	if len(cmd.StringArgs) > 0 {
 		return fmt.Errorf("following doesn't accept any args.")
 	}
-	user, err := s.Db.GetUser(context.Background(), s.Cfg.GetUser())
-	if err != nil {
-		return fmt.Errorf("error getting user: %w", err)
-	}
 	feedsFollowed, err := s.Db.GetFeedFollowsForUser(context.Background(), user.ID)
+	if err != nil {
+		return fmt.Errorf("error getting feeds followed by user: %w", err)
+	}
 	fmt.Printf("* %v\n", s.Cfg.GetUser())
 	for _, feed := range feedsFollowed {
 		feed_name, err := s.Db.GetFeedNameById(context.Background(), feed.FeedID)
@@ -206,6 +199,22 @@ func GetFeedFollowsForUser(s *State, cmd Command) error {
 			return fmt.Errorf("error getting feed name: %w", err)
 		}
 		fmt.Printf("    - %v\n", feed_name)
+	}
+	return nil
+}
+
+func DeleteFeedFollowsPair(s *State, cmd Command, user database.User) error {
+	feed, err := s.Db.GetFeedByUrl(context.Background(), cmd.StringArgs[0])
+	if err != nil {
+		return fmt.Errorf("error getting feed from url: %w", err)
+	}
+	deletePair := database.DeleteFeedFollowsPairParams{
+		UserID: user.ID,
+		FeedID: feed.ID,
+	}
+	err = s.Db.DeleteFeedFollowsPair(context.Background(), deletePair)
+	if err != nil {
+		return fmt.Errorf("error deleting the pair: %w", err)
 	}
 	return nil
 }

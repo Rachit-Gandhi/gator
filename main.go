@@ -49,7 +49,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("registration of command failed: %v", err)
 	}
-	err = commandsMap.Register("addfeed", commands.AddFeed)
+	err = commandsMap.Register("addfeed", commands.MiddlewareLoggedIn(commands.AddFeed))
 	if err != nil {
 		log.Fatalf("registration of command failed: %v", err)
 	}
@@ -57,11 +57,15 @@ func main() {
 	if err != nil {
 		log.Fatalf("registration of command failed: %v", err)
 	}
-	err = commandsMap.Register("follow", commands.CreateFeedFollow)
+	err = commandsMap.Register("follow", commands.MiddlewareLoggedIn(commands.CreateFeedFollow))
 	if err != nil {
 		log.Fatalf("registration of command failed: %v", err)
 	}
-	err = commandsMap.Register("following", commands.GetFeedFollowsForUser)
+	err = commandsMap.Register("following", commands.MiddlewareLoggedIn(commands.GetFeedFollowsForUser))
+	if err != nil {
+		log.Fatalf("registration of command failed: %v", err)
+	}
+	err = commandsMap.Register("unfollow", commands.MiddlewareLoggedIn(commands.DeleteFeedFollowsPair))
 	if err != nil {
 		log.Fatalf("registration of command failed: %v", err)
 	}
