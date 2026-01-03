@@ -57,6 +57,14 @@ func main() {
 	if err != nil {
 		log.Fatalf("registration of command failed: %v", err)
 	}
+	err = commandsMap.Register("follow", commands.CreateFeedFollow)
+	if err != nil {
+		log.Fatalf("registration of command failed: %v", err)
+	}
+	err = commandsMap.Register("following", commands.GetFeedFollowsForUser)
+	if err != nil {
+		log.Fatalf("registration of command failed: %v", err)
+	}
 	cliArgs := os.Args
 	if len(cliArgs) < 2 {
 		log.Fatal("expected a command name")

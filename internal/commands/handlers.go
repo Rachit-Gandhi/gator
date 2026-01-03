@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"time"
 
@@ -127,6 +128,20 @@ func AddFeed(s *State, cmd Command) error {
 		Url:    url,
 	}
 	_, err = s.Db.AddFeed(context.Background(), newFeed)
+	if err != nil {
+		fmt.Errorf("error adding feed: %w", err)
+	}
+	feed_follow := database.CreateFeedFollowParams{
+		ID:        uuid.New(),
+		UserID:    user_id,
+		FeedID:    newFeed.ID,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	_, err = s.Db.CreateFeedFollow(context.Background(), feed_follow)
+	if err != nil {
+		fmt.Errorf("error adding feed follow post adding feed: %w", err)
+	}
 	fmt.Printf("feed aded: %v\n", newFeed)
 	return nil
 }
@@ -145,6 +160,52 @@ func GetFeeds(s *State, cmd Command) error {
 			return fmt.Errorf("error getting username: %w", err)
 		}
 		fmt.Printf("Name: %v, URL: %v, userName: %v\n", feed.Name, feed.Url, userName.Name)
+	}
+	return nil
+}
+
+func CreateFeedFollow(s *State, cmd Command) error {
+	if len(cmd.StringArgs) != 1 {
+		return fmt.Errorf("create feed expects one argument, feed_url")
+	}
+	feed_url := cmd.StringArgs[0]
+	user, err := s.Db.GetUser(context.Background(), s.Cfg.GetUser())
+	feed, err := s.Db.GetFeedByUrl(context.Background(), feed_url)
+	if err == sql.ErrNoRows {
+		return fmt.Errorf("no feed entry found to follow: %w", err)
+	} else if err != nil {
+		return fmt.Errorf("error getting user: %w", err)
+	}
+	feed_follow := database.CreateFeedFollowParams{
+		ID:        uuid.New(),
+		UserID:    user.ID,
+		FeedID:    feed.ID,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	_, err = s.Db.CreateFeedFollow(context.Background(), feed_follow)
+	if err != nil {
+		return fmt.Errorf("error creating feed follow: %w", err)
+	}
+	return nil
+}
+
+func GetFeedFollowsForUser(s *State, cmd Command) error {
+	if len(cmd.StringArgs) > 0 {
+		return fmt.Errorf("following doesn't accept any args.")
+	}
+	user, err := s.Db.GetUser(context.Background(), s.Cfg.GetUser())
+	if err != nil {
+		return fmt.Errorf("error getting user: %w", err)
+	}
+	feedsFollowed, err := s.Db.GetFeedFollowsForUser(context.Background(), user.ID)
+	fmt.Printf("* %v\n", s.Cfg.GetUser())
+	for _, feed := range feedsFollowed {
+		feed_name, err := s.Db.GetFeedNameById(context.Background(), feed.FeedID)
+		if err != nil {
+			return fmt.Errorf("error getting feed name: %w", err)
+		}
+		fmt.Printf("    - %v\n", feed_name)
 	}
 	return nil
 }
