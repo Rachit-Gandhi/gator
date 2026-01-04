@@ -144,9 +144,3 @@ Browse aggregated posts (default limit applies if not specified).
 Once built or installed, the `gator` binary does **not** require the Go toolchain to run.
 
 ---
-
-## Repository
-
-GitHub repository:
-[https://github.com/Rachit-Gandhi/gator](https://github.com/Rachit-Gandhi/gator)
-
