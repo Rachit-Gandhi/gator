@@ -241,6 +241,9 @@ func BrowseFeeds(s *State, cmd Command, user database.User) error {
 		if err != nil {
 			return fmt.Errorf("limit must be a number: %w", err)
 		}
+		if parsed < 0 {
+			return fmt.Errorf("limit must be a positive number.")
+		}
 		limit = parsed
 	}
 	userAndLimit := database.GetPostsForUserParams{
