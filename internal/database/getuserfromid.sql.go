@@ -13,7 +13,7 @@ import (
 
 const getUserById = `-- name: GetUserById :one
 SELECT id, created_at, updated_at, name FROM users
-where id = $1
+WHERE id = $1
 `
 
 func (q *Queries) GetUserById(ctx context.Context, id uuid.UUID) (User, error) {
