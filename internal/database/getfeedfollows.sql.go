@@ -13,7 +13,7 @@ import (
 
 const getFeedFollowsForUser = `-- name: GetFeedFollowsForUser :many
 SELECT id, created_at, updated_at, user_id, feed_id FROM feed_follows
-where user_id = $1
+WHERE user_id = $1
 `
 
 func (q *Queries) GetFeedFollowsForUser(ctx context.Context, userID uuid.UUID) ([]FeedFollow, error) {

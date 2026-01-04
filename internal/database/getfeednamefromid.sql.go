@@ -13,7 +13,7 @@ import (
 
 const getFeedNameById = `-- name: GetFeedNameById :one
 SELECT name FROM feeds
-where id = $1
+WHERE id = $1
 `
 
 func (q *Queries) GetFeedNameById(ctx context.Context, id uuid.UUID) (string, error) {
