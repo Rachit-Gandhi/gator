@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"html"
 	"strconv"
 	"time"
 
@@ -110,7 +111,8 @@ func Aggregate(s *State, cmd Command) error {
 	for ; ; <-ticker.C {
 		err := scrapeFeeds(s)
 		if err != nil {
-			return fmt.Errorf("error scraping feed: %w", err)
+			fmt.Printf("error scraping feed: %v", err)
+			continue
 		}
 	}
 }
@@ -234,8 +236,12 @@ func BrowseFeeds(s *State, cmd Command, user database.User) error {
 		return fmt.Errorf("browse expects max one argument limit")
 	}
 	limit := 2
-	if len(cmd.StringArgs) > 0 {
-		limit, _ = strconv.Atoi(cmd.StringArgs[0])
+	if len(cmd.StringArgs) == 1 {
+		parsed, err := strconv.Atoi(cmd.StringArgs[0])
+		if err != nil {
+			return fmt.Errorf("limit must be a number: %w", err)
+		}
+		limit = parsed
 	}
 	userAndLimit := database.GetPostsForUserParams{
 		UserID: user.ID,
@@ -245,9 +251,6 @@ func BrowseFeeds(s *State, cmd Command, user database.User) error {
 	if err != nil {
 		return fmt.Errorf("error getting posts for the user: %w", err)
 	}
-	if len(posts) == 0 {
-		fmt.Printf("Getting %v POSTS!!!!!!!!!!!!!!!!!!!!!!!", len(posts))
-	}
 	for i, post := range posts {
 		fmt.Printf("Post: %v\n\tTitle:%v\n\tPostURL:%v\n\tDescription:%v\n", i, post.Title, post.PostUrl, post.PostDescription)
 	}
@@ -255,10 +258,27 @@ func BrowseFeeds(s *State, cmd Command, user database.User) error {
 }
 
 func limitWord(word string, limit int) string {
-	if len(word) > limit {
-		return word[:limit]
+	runes := []rune(word)
+	if len(runes) > limit {
+		return string(runes[:limit])
 	}
 	return word
+}
+
+func parseRSSDate(dateStr string) (time.Time, error) {
+	formats := []string{
+		"Mon, 02 Jan 2006 15:04:05 -0700", // RFC1123Z
+		"Mon, 02 Jan 2006 15:04:05 MST",   // RFC1123
+		time.RFC822,
+		time.RFC822Z,
+		time.RFC3339,
+	}
+	for _, format := range formats {
+		if t, err := time.Parse(format, dateStr); err == nil {
+			return t, nil
+		}
+	}
+	return time.Time{}, fmt.Errorf("unable to parse date: %s", dateStr)
 }
 
 func scrapeFeeds(s *State) error {
@@ -273,7 +293,7 @@ func scrapeFeeds(s *State) error {
 	fmt.Printf("Scraping feed: %s (ID: %v)\n", feed.Name, feed.ID)
 	for _, post := range r.Channel.Item {
 		fmt.Printf("fetching: %v\n", post.Title)
-		t, err := time.Parse("Mon, 02 Jan 2006 15:04:05 -0700", post.PubDate)
+		t, err := parseRSSDate(post.PubDate)
 		if err != nil {
 			fmt.Printf("error parsing time resorting to default current time: %v\n", err)
 			t = time.Now()
@@ -283,9 +303,9 @@ func scrapeFeeds(s *State) error {
 			ID:              uuid.New(),
 			CreatedAt:       time.Now(),
 			UpdatedAt:       time.Now(),
-			Title:           limitWord(post.Title, 100),
-			PostUrl:         limitWord(post.Link, 500),
-			PostDescription: limitWord(post.Description, 500),
+			Title:           limitWord(html.UnescapeString(post.Title), 100),
+			PostUrl:         limitWord(html.UnescapeString(post.Link), 500),
+			PostDescription: limitWord(html.UnescapeString(post.Description), 500),
 			PublishedAt:     t,
 			FeedID:          feed.ID,
 		}
